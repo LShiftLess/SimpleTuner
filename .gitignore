@@ -1,7 +1,7 @@
 *.code-workspace
 multidatabackend*json
 # Python and virtual environment files
-psunset/
+output/
 temp/
 env.sh
 *.pem
@@ -55,6 +55,7 @@ config/*.json
 config/*.env
 wandb/
 cache/
+models/
 vae_cache/
 vendor/
 inference/
