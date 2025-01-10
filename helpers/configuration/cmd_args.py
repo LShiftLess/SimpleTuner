@@ -741,7 +741,7 @@ def get_argument_parser():
         default=None,
         help=(
             "The relative or fully-qualified path for your data backend config."
-            " See multidatabackend.example.json for an example."
+            " See multidatabackend.json.example for an example."
         ),
     )
     parser.add_argument(
@@ -1575,7 +1575,7 @@ def get_argument_parser():
         "--user_prompt_library",
         type=str,
         default=None,
-        help="This should be a path to the JSON file containing your prompt library. See user_prompt_library.example.json.",
+        help="This should be a path to the JSON file containing your prompt library. See user_prompt_library.json.example.",
     )
     parser.add_argument(
         "--validation_negative_prompt",

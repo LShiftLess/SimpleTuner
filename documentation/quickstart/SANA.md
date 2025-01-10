@@ -104,7 +104,7 @@ If you prefer to manually configure:
 Copy `config/config.json.example` to `config/config.json`:
 
 ```bash
-cp config/config.example.json config/config.json
+cp config/config.json.example config/config.json
 ```
 
 There, you will possibly need to modify the following variables:

@@ -1,7 +1,3 @@
-from accelerate import Accelerator
-
-Accelerator()
-
 import logging
 
 # Quiet down, you.
@@ -23,6 +19,7 @@ environ["ACCELERATE_LOG_LEVEL"] = "WARNING"
 
 from helpers.training.trainer import Trainer
 from helpers.training.state_tracker import StateTracker
+from helpers import log_format
 
 logger = logging.getLogger("SimpleTuner")
 logger.setLevel(environ.get("SIMPLETUNER_LOG_LEVEL", "INFO"))
