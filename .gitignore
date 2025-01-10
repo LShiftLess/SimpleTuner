@@ -2,6 +2,7 @@
 multidatabackend*json
 # Python and virtual environment files
 output/
+datasets/
 temp/
 env.sh
 *.pem
