@@ -94,7 +94,7 @@ If you prefer to manually configure:
 Copy `config/config.json.example` to `config/config.json`:
 
 ```bash
-cp config/config.json.example config/config.json
+cp config/config.example.json config/config.json
 ```
 
 #### AMD ROCm follow-up steps
