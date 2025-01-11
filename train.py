@@ -1,3 +1,7 @@
+# Init the logger
+from accelerate import Accelerator
+Accelerator()
+
 import logging
 
 # Quiet down, you.
