@@ -5,7 +5,6 @@ output/
 temp/
 env.sh
 *.pem
-*/config/config.json
 user_prompt_library.json
 __pycache__/
 .venv/
@@ -46,13 +45,10 @@ venv/
 Thumbs.db
 
 files.tbz
-*/config/auth.json
 work
 multidatabackend.json
 multidatabackend_sd2x.json
 
-config/*.json
-config/*.env
 wandb/
 cache/
 vae_cache/
@@ -60,8 +56,6 @@ vendor/
 inference/
 webhooks.json
 untracked/
-config/*/
-config/*.toml
 static
 templates
 api_state.json
