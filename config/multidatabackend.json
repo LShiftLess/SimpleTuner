@@ -2,7 +2,7 @@
     {
         "id": "vtubers",
         "type": "local",
-        "instance_data_dir": "cache/datasets/vtubers",
+        "instance_data_dir": "datasets/vtubers",
         "crop": false,
         "crop_style": "center",
         "crop_aspect": "square",
@@ -26,7 +26,7 @@
     {
         "id": "text-embeds",
         "dataset_type": "text_embeds",
-        "default": false,
+        "default": true,
         "type": "local",
         "cache_dir": "cache/text/aquability-ft"
     }
