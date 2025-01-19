@@ -3,7 +3,7 @@
     "multiplier": 1.0,
     "linear_dim": 10000,
     "linear_alpha": 1,
-    "factor": 16,
+    "factor": 8,
     "apply_preset": {
         "target_module": [
             "Attention",
@@ -11,10 +11,10 @@
         ],
         "module_algo_map": {
             "Attention": {
-                "factor": 16
+                "factor": 8
             },
             "FeedForward": {
-                "factor": 8
+                "factor": 4
             }
         }
     }

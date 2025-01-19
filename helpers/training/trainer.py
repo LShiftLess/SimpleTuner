@@ -593,7 +593,8 @@ class Trainer:
         if self.tokenizer_3 is not None:
             logger.info("Moving text encoder 3 to GPU.")
             self.text_encoder_3.to(
-                self.accelerator.device, dtype=self.config.weight_dtype
+                # self.accelerator.device, dtype=self.config.weight_dtype
+                self.accelerator.device
             )
             self.tokenizers.append(self.tokenizer_3)
             self.text_encoders.append(self.text_encoder_3)
@@ -1760,10 +1761,11 @@ class Trainer:
             else:
                 self.unet.to(target_device, dtype=self.config.weight_dtype)
         if self.transformer is not None:
-            if self.config.is_quantized:
-                self.transformer.to(target_device)
-            else:
-                self.transformer.to(target_device, dtype=self.config.weight_dtype)
+            self.transformer.to(target_device)
+            # if self.config.is_quantized:
+            #     self.transformer.to(target_device)
+            # else:
+            #     self.transformer.to(target_device, dtype=self.config.weight_dtype)
         if getattr(self.accelerator, "_lycoris_wrapped_network", None) is not None:
             self.accelerator._lycoris_wrapped_network = (
                 self.accelerator._lycoris_wrapped_network.to(

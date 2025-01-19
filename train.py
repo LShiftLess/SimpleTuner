@@ -1,6 +1,6 @@
 # Init the logger
-from accelerate import Accelerator
-Accelerator()
+# from accelerate import Accelerator
+# Accelerator()
 
 import logging
 
