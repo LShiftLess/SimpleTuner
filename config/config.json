@@ -21,11 +21,10 @@
   "caption_dropout_probability": 0.1,
   "model_type": "lora",
   "lora_type": "lycoris",
-  "lora_rank": 64,
   "lycoris_config": "config/lycoris_config.json",
   "mixed_precision": "bf16",
   "optimizer": "bnb-adamw8bit-paged",
-  "learning_rate": "1e-4",
+  "learning_rate": "1e-6",
   "lr_scheduler": "polynomial",
   "lr_warmup_steps": 100,
   "disable_benchmark": "false",
@@ -39,7 +38,7 @@
   "validation_guidance_rescale": "0.0",
   "validation_num_inference_steps": "20",
   "validation_lycoris_strength": 1.0,
-  "validation_prompt": "A senior high school girl, white hair, green eyes, flat breasts. In Japanese anime style.",
+  "validation_prompt": "A senior high school girl who has white hair, green eyes, flat breasts make love with another boy. In Japanese anime style.",
   "validation_torch_compile": "false",
   "user_prompt_library": "config/user_prompt_library.json"
 }
