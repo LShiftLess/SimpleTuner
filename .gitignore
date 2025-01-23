@@ -3,7 +3,6 @@
 temp/
 env.sh
 *.pem
-user_prompt_library.json
 __pycache__/
 .venv/
 cache/
@@ -44,7 +43,6 @@ Thumbs.db
 
 files.tbz
 work
-multidatabackend_sd2x.json
 
 wandb/
 cache/

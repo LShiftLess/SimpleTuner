@@ -238,6 +238,27 @@ tests-mypy = ["mypy (>=1.6)", "pytest-mypy-plugins"]
 tests-no-zope = ["attrs[tests-mypy]", "cloudpickle", "hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "beautifulsoup4"
+version = "4.12.3"
+description = "Screen-scraping library"
+optional = false
+python-versions = ">=3.6.0"
+files = [
+    {file = "beautifulsoup4-4.12.3-py3-none-any.whl", hash = "sha256:b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed"},
+    {file = "beautifulsoup4-4.12.3.tar.gz", hash = "sha256:74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051"},
+]
+
+[package.dependencies]
+soupsieve = ">1.2"
+
+[package.extras]
+cchardet = ["cchardet"]
+chardet = ["chardet"]
+charset-normalizer = ["charset-normalizer"]
+html5lib = ["html5lib"]
+lxml = ["lxml"]
+
+[[package]]
 name = "bitsandbytes"
 version = "0.44.1"
 description = "k-bit optimizers and matrix multiplication routines."
@@ -1973,6 +1994,20 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-
 type = ["mypy (>=1.8)"]
 
 [[package]]
+name = "prodigy-plus-schedule-free"
+version = "1.8.51"
+description = "Automatic learning rate optimiser based on Prodigy and Schedule-Free"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "prodigy_plus_schedule_free-1.8.51-py3-none-any.whl", hash = "sha256:db2e8e7443e8a8b83e412c8e6b81ac67c72135a8065c1dc001d781a9d2f5dbef"},
+    {file = "prodigy_plus_schedule_free-1.8.51.tar.gz", hash = "sha256:19e5acb151c54f4326b11e6f308f57acbaa4fba5834bf3a32d759a5de11ba6e7"},
+]
+
+[package.dependencies]
+torch = ">=2.0"
+
+[[package]]
 name = "protobuf"
 version = "4.25.4"
 description = ""
@@ -2955,6 +2990,17 @@ python-versions = ">=3.7"
 files = [
     {file = "sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"},
     {file = "sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc"},
+]
+
+[[package]]
+name = "soupsieve"
+version = "2.6"
+description = "A modern CSS selector implementation for Beautiful Soup."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "soupsieve-2.6-py3-none-any.whl", hash = "sha256:e72c4ff06e4fb6e4b5a9f0f55fe6e81514581fca1515028625d0f299c602ccc9"},
+    {file = "soupsieve-2.6.tar.gz", hash = "sha256:e2e68417777af359ec65daac1057404a3c8a5455bb8abc36f1a9866ab1a51abb"},
 ]
 
 [[package]]
@@ -3983,4 +4029,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "fbd08b88febfcf8b151d1fe93c90b9c948879fe37a90c065aa1f88d6183471ca"
+content-hash = "4443d5137bc126d539a404a63d854ecd119c92aa8b2c0deb0892fb9d6f72f7af"

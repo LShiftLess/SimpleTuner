@@ -27,6 +27,11 @@ from helpers.multiaspect.image import MultiaspectImage
 from helpers.image_manipulation.brightness import calculate_luminance
 from PIL import Image, ImageDraw, ImageFont
 from diffusers import SanaPipeline
+from helpers.training.deepspeed import (
+    deepspeed_zero_init_disabled_context_manager,
+    prepare_model_for_deepspeed,
+)
+from transformers.utils import ContextManagers
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("SIMPLETUNER_LOG_LEVEL") or "INFO")
@@ -523,14 +528,17 @@ class Validation:
         self.vae = precached_vae
         if self.vae is None:
             logger.info(f"Initialising {AutoencoderClass}")
-            self.vae = AutoencoderClass.from_pretrained(
-                vae_path,
-                subfolder=(
-                    "vae" if args.pretrained_vae_model_name_or_path is None else None
-                ),
-                revision=args.revision,
-                force_upcast=False,
-            ).to(self.inference_device)
+            with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+                self.vae = AutoencoderClass.from_pretrained(
+                    vae_path,
+                    subfolder=(
+                        "vae"
+                        if args.pretrained_vae_model_name_or_path is None
+                        else None
+                    ),
+                    revision=args.revision,
+                    force_upcast=False,
+                ).to(self.inference_device)
         StateTracker.set_vae(self.vae)
 
         return self.vae
@@ -910,9 +918,9 @@ class Validation:
         validation_type="intermediary",
         force_evaluation: bool = False,
     ):
-        # a wrapper for should_perform_validation that can run in the training loop
+        # a wrapper for should_perform_intermediary_validation that can run in the training loop
         self._update_state()
-        return self.should_perform_validation(
+        return self.should_perform_intermediary_validation(
             step, self.validation_prompts, validation_type
         ) or (step == 0 and validation_type == "base_model")
 
@@ -924,17 +932,18 @@ class Validation:
         skip_execution: bool = False,
     ):
         self._update_state()
-        should_validate = self.should_perform_validation(
+        would_do_intermediary_validation = self.should_perform_intermediary_validation(
             step, self.validation_prompts, validation_type
         ) or (step == 0 and validation_type == "base_model")
         logger.debug(
-            f"Should evaluate: {should_validate}, force evaluation: {force_evaluation}, skip execution: {skip_execution}"
+            f"Should evaluate: {would_do_intermediary_validation}, force evaluation: {force_evaluation}, skip execution: {skip_execution}"
         )
-        if not should_validate and not force_evaluation:
+        if not would_do_intermediary_validation and not force_evaluation:
             return self
-        if should_validate and skip_execution:
+        if would_do_intermediary_validation and validation_type == "final":
             # If the validation would have fired off, we'll skip it.
             # This is useful at the end of training so we don't validate 2x.
+            logger.debug("Not running validation because intermediary might have already fired off.")
             return self
         if StateTracker.get_webhook_handler() is not None:
             StateTracker.get_webhook_handler().send(
@@ -962,15 +971,14 @@ class Validation:
 
         return self
 
-    def should_perform_validation(self, step, validation_prompts, validation_type):
+    def should_perform_intermediary_validation(self, step, validation_prompts, validation_type):
         should_do_intermediary_validation = (
             validation_prompts
             and self.global_step % self.args.validation_steps == 0
             and step % self.args.gradient_accumulation_steps == 0
             and self.global_step > self.global_resume_step
         )
-        is_final_validation = validation_type == "final"
-        return (is_final_validation or should_do_intermediary_validation) and (
+        return should_do_intermediary_validation and (
             self.accelerator.is_main_process or self.deepseed
         )
 

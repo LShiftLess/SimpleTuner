@@ -3,6 +3,7 @@ from os import environ
 from diffusers.utils import is_wandb_available
 from helpers.training.multi_process import _get_rank as get_rank
 from helpers.training.state_tracker import StateTracker
+from torch.version import cuda as cuda_version
 
 logger = logging.getLogger(__name__)
 if get_rank() == 0:
@@ -73,6 +74,7 @@ def safety_check(args, accelerator):
         accelerator is not None
         and accelerator.device.type == "cuda"
         and accelerator.is_main_process
+        and cuda_version is not None
     ):
         import subprocess
 
@@ -109,12 +111,12 @@ def safety_check(args, accelerator):
         sys.exit(1)
 
     if (
-        args.flux_schedule_shift is not None
-        and args.flux_schedule_shift > 0
-        and args.flux_schedule_auto_shift
+        args.flow_schedule_shift is not None
+        and args.flow_schedule_shift > 0
+        and args.flow_schedule_auto_shift
     ):
         logger.error(
-            f"--flux_schedule_auto_shift cannot be combined with --flux_schedule_shift. Please set --flux_schedule_shift to 0 if you want to train with --flux_schedule_auto_shift."
+            f"--flow_schedule_auto_shift cannot be combined with --flow_schedule_shift. Please set --flow_schedule_shift to 0 if you want to train with --flow_schedule_auto_shift."
         )
         sys.exit(1)
 

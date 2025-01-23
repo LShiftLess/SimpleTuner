@@ -121,7 +121,7 @@ from helpers.models.flux import (
     pack_latents,
     unpack_latents,
     get_mobius_guidance,
-    apply_flux_schedule_shift,
+    apply_flow_schedule_shift,
 )
 
 is_optimi_available = False
@@ -469,24 +469,26 @@ class Trainer:
             from diffusers import AutoencoderDC as AutoencoderClass
         else:
             from diffusers import AutoencoderKL as AutoencoderClass
+        self.vae_cls = AutoencoderClass
 
-        try:
-            self.vae = AutoencoderClass.from_pretrained(**self.config.vae_kwargs)
-        except:
-            logger.warning(
-                "Couldn't load VAE with default path. Trying without a subfolder.."
-            )
-            self.config.vae_kwargs["subfolder"] = None
-            self.vae = AutoencoderClass.from_pretrained(**self.config.vae_kwargs)
-            if (
-                self.vae is not None
-                and self.config.vae_enable_tiling
-                and hasattr(self.vae, "enable_tiling")
-            ):
+        with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+            try:
+                self.vae = self.vae_cls.from_pretrained(**self.config.vae_kwargs)
+            except:
                 logger.warning(
-                    "Enabling VAE tiling for greatly reduced memory consumption due to --vae_enable_tiling which may result in VAE tiling artifacts in encoded latents."
+                    "Couldn't load VAE with default path. Trying without a subfolder.."
                 )
-                self.vae.enable_tiling()
+                self.config.vae_kwargs["subfolder"] = None
+                self.vae = self.vae_cls.from_pretrained(**self.config.vae_kwargs)
+        if (
+            self.vae is not None
+            and self.config.vae_enable_tiling
+            and hasattr(self.vae, "enable_tiling")
+        ):
+            logger.warning(
+                "Enabling VAE tiling for greatly reduced memory consumption due to --vae_enable_tiling which may result in VAE tiling artifacts in encoded latents."
+            )
+            self.vae.enable_tiling()
         if not move_to_accelerator:
             logger.debug("Not moving VAE to accelerator.")
             return
@@ -530,28 +532,28 @@ class Trainer:
             None,
             None,
         )
-        if self.tokenizer_1 is not None:
-            self.text_encoder_cls_1 = import_model_class_from_model_name_or_path(
-                self.config.text_encoder_path,
-                self.config.revision,
-                self.config,
-                subfolder=self.config.text_encoder_subfolder,
-            )
-        if self.tokenizer_2 is not None:
-            self.text_encoder_cls_2 = import_model_class_from_model_name_or_path(
-                self.config.pretrained_model_name_or_path,
-                self.config.revision,
-                self.config,
-                subfolder="text_encoder_2",
-            )
-        if self.tokenizer_3 is not None and self.config.model_family == "sd3":
-            self.text_encoder_cls_3 = import_model_class_from_model_name_or_path(
-                self.config.pretrained_model_name_or_path,
-                self.config.revision,
-                self.config,
-                subfolder="text_encoder_3",
-            )
         with ContextManagers(deepspeed_zero_init_disabled_context_manager()):
+            if self.tokenizer_1 is not None:
+                self.text_encoder_cls_1 = import_model_class_from_model_name_or_path(
+                    self.config.text_encoder_path,
+                    self.config.revision,
+                    self.config,
+                    subfolder=self.config.text_encoder_subfolder,
+                )
+            if self.tokenizer_2 is not None:
+                self.text_encoder_cls_2 = import_model_class_from_model_name_or_path(
+                    self.config.pretrained_model_name_or_path,
+                    self.config.revision,
+                    self.config,
+                    subfolder="text_encoder_2",
+                )
+            if self.tokenizer_3 is not None and self.config.model_family == "sd3":
+                self.text_encoder_cls_3 = import_model_class_from_model_name_or_path(
+                    self.config.pretrained_model_name_or_path,
+                    self.config.revision,
+                    self.config,
+                    subfolder="text_encoder_3",
+                )
             tokenizers = [self.tokenizer_1, self.tokenizer_2, self.tokenizer_3]
             text_encoder_classes = [
                 self.text_encoder_cls_1,
@@ -670,7 +672,13 @@ class Trainer:
 
             raise e
 
-        self.init_validation_prompts()
+        try:
+            self.init_validation_prompts()
+        except Exception as e:
+            logger.error("Could not generate validation prompts.")
+            logger.error(e)
+            raise e
+
         # We calculate the number of steps per epoch by dividing the number of images by the effective batch divisor.
         # Gradient accumulation steps mean that we only update the model weights every /n/ steps.
         collected_data_backend_str = list(StateTracker.get_data_backends().keys())
@@ -696,6 +704,16 @@ class Trainer:
         self.accelerator.wait_for_everyone()
 
     def init_validation_prompts(self):
+        if (
+            hasattr(self.accelerator, "state")
+            and hasattr(self.accelerator.state, "deepspeed_plugin")
+            and getattr(self.accelerator.state.deepspeed_plugin, "deepspeed_config", {})
+            .get("zero_optimization", {})
+            .get("stage")
+            == 3
+        ):
+            logger.error("Cannot run validations with DeepSpeed ZeRO stage 3.")
+            return
         if self.accelerator.is_main_process:
             if self.config.model_family == "flux":
                 (
@@ -1129,7 +1147,7 @@ class Trainer:
                     "You must specify either --max_train_steps or --num_train_epochs with a value > 0"
                 )
             self.config.num_train_epochs = math.ceil(
-                self.config.max_train_steps / self.config.num_update_steps_per_epoch
+                self.config.max_train_steps / max(self.config.num_update_steps_per_epoch, 1)
             )
             logger.info(
                 f"Calculated our maximum training steps at {self.config.max_train_steps} because we have"
@@ -1215,9 +1233,7 @@ class Trainer:
     def init_lr_scheduler(self):
         self.config.is_schedulefree = is_lr_scheduler_disabled(self.config.optimizer)
         if self.config.is_schedulefree:
-            logger.info(
-                "Using experimental AdamW ScheduleFree optimiser from Facebook. Experimental due to newly added Kahan summation."
-            )
+            logger.info("Using experimental ScheduleFree optimiser..")
             # we don't use LR schedulers with schedulefree optimisers
             lr_scheduler = None
         if not self.config.use_deepspeed_scheduler and not self.config.is_schedulefree:
@@ -1601,7 +1617,7 @@ class Trainer:
                 * self.accelerator.num_processes
             )
 
-        if self.state["current_epoch"] > self.config.num_train_epochs + 1:
+        if self.state["current_epoch"] > self.config.num_train_epochs + 1 and not self.config.ignore_final_epochs:
             logger.info(
                 f"Reached the end ({self.state['current_epoch']} epochs) of our training run ({self.config.num_train_epochs} epochs). This run will do zero steps."
             )
@@ -1631,18 +1647,32 @@ class Trainer:
             tracker_run_name = (
                 self.config.tracker_run_name or "simpletuner-training-run"
             )
-            self.accelerator.init_trackers(
-                project_name,
-                config=vars(public_args),
-                init_kwargs={
-                    "wandb": {
-                        "name": tracker_run_name,
-                        "id": f"{public_args_hash}",
-                        "resume": "allow",
-                        "allow_val_change": True,
-                    }
-                },
-            )
+            try:
+                self.accelerator.init_trackers(
+                    project_name,
+                    config=vars(public_args),
+                    init_kwargs={
+                        "wandb": {
+                            "name": tracker_run_name,
+                            "id": f"{public_args_hash}",
+                            "resume": "allow",
+                            "allow_val_change": True,
+                        }
+                    },
+                )
+            except Exception as e:
+                if "Object has no attribute 'disabled'" in repr(e):
+                    logger.warning(
+                        "WandB is disabled, and Accelerate was not quite happy about it."
+                    )
+                else:
+                    logger.error(f"Could not initialize trackers: {e}")
+                    self._send_webhook_raw(
+                        structured_data={
+                            "message": f"Could not initialize trackers. Continuing without. {e}"
+                        },
+                        message_type="error",
+                    )
             self._send_webhook_raw(
                 structured_data=public_args.__dict__,
                 message_type="training_config",
@@ -2275,8 +2305,11 @@ class Trainer:
         current_epoch_step = None
         self.bf, fetch_thread = None, None
         iterator_fn = random_dataloader_iterator
-        for epoch in range(self.state["first_epoch"], self.config.num_train_epochs + 1):
-            if self.state["current_epoch"] > self.config.num_train_epochs + 1:
+        num_epochs_to_track = self.config.num_train_epochs + 1
+        if self.config.ignore_final_epochs:
+            num_epochs_to_track += 1000000
+        for epoch in range(self.state["first_epoch"], num_epochs_to_track):
+            if self.state["current_epoch"] > self.config.num_train_epochs + 1 and not self.config.ignore_final_epochs:
                 # This might immediately end training, but that's useful for simply exporting the model.
                 logger.info(
                     f"Training run is complete ({self.config.num_train_epochs}/{self.config.num_train_epochs} epochs, {self.state['global_step']}/{self.config.max_train_steps} steps)."
@@ -2400,28 +2433,28 @@ class Trainer:
                     if self.config.flow_matching:
                         if not self.config.flux_fast_schedule and not any(
                             [
-                                self.config.flux_use_beta_schedule,
-                                self.config.flux_use_uniform_schedule,
+                                self.config.flow_use_beta_schedule,
+                                self.config.flow_use_uniform_schedule,
                             ]
                         ):
                             # imported from cloneofsimo's minRF trainer: https://github.com/cloneofsimo/minRF
                             # also used by: https://github.com/XLabs-AI/x-flux/tree/main
                             # and: https://github.com/kohya-ss/sd-scripts/commit/8a0f12dde812994ec3facdcdb7c08b362dbceb0f
                             sigmas = torch.sigmoid(
-                                self.config.flow_matching_sigmoid_scale
+                                self.config.flow_sigmoid_scale
                                 * torch.randn((bsz,), device=self.accelerator.device)
                             )
-                            sigmas = apply_flux_schedule_shift(
+                            sigmas = apply_flow_schedule_shift(
                                 self.config, self.noise_scheduler, sigmas, noise
                             )
-                        elif self.config.flux_use_uniform_schedule:
+                        elif self.config.flow_use_uniform_schedule:
                             sigmas = torch.rand((bsz,), device=self.accelerator.device)
-                            sigmas = apply_flux_schedule_shift(
+                            sigmas = apply_flow_schedule_shift(
                                 self.config, self.noise_scheduler, sigmas, noise
                             )
-                        elif self.config.flux_use_beta_schedule:
-                            alpha = self.config.flux_beta_schedule_alpha
-                            beta = self.config.flux_beta_schedule_beta
+                        elif self.config.flow_use_beta_schedule:
+                            alpha = self.config.flow_beta_schedule_alpha
+                            beta = self.config.flow_beta_schedule_beta
 
                             # Create a Beta distribution instance
                             beta_dist = Beta(alpha, beta)
@@ -2431,7 +2464,7 @@ class Trainer:
                                 device=self.accelerator.device
                             )
 
-                            sigmas = apply_flux_schedule_shift(
+                            sigmas = apply_flow_schedule_shift(
                                 self.config, self.noise_scheduler, sigmas, noise
                             )
                         else:
@@ -2745,12 +2778,14 @@ class Trainer:
                                 if param.grad is not None:
                                     param.grad.data = param.grad.data.to(torch.float32)
 
+                        self.grad_norm = self._max_grad_value()
                         if (
                             self.accelerator.sync_gradients
-                            and self.config.optimizer != "optimi-stableadamw"
+                            and self.config.optimizer
+                            not in ["optimi-stableadamw", "prodigy"]
                             and self.config.max_grad_norm > 0
                         ):
-                            # StableAdamW does not need clipping, similar to Adafactor.
+                            # StableAdamW/Prodigy do not need clipping, similar to Adafactor.
                             if self.config.grad_clip_method == "norm":
                                 self.grad_norm = self.accelerator.clip_grad_norm_(
                                     self._get_trainable_parameters(),
@@ -2760,7 +2795,6 @@ class Trainer:
                                 # deepspeed can only do norm clipping (internally)
                                 pass
                             elif self.config.grad_clip_method == "value":
-                                self.grad_norm = self._max_grad_value()
                                 self.accelerator.clip_grad_value_(
                                     self._get_trainable_parameters(),
                                     self.config.max_grad_norm,
@@ -2791,7 +2825,22 @@ class Trainer:
                 wandb_logs = {}
                 if self.accelerator.sync_gradients:
                     try:
-                        if self.config.is_schedulefree:
+                        if "prodigy" in self.config.optimizer:
+                            self.lr = self.optimizer.param_groups[0]["d"]
+                            wandb_logs.update(
+                                {
+                                    "prodigy/d": self.optimizer.param_groups[0]["d"],
+                                    "prodigy/d_prev": self.optimizer.param_groups[0][
+                                        "d_prev"
+                                    ],
+                                    "prodigy/d0": self.optimizer.param_groups[0]["d0"],
+                                    "prodigy/d_coef": self.optimizer.param_groups[0][
+                                        "d_coef"
+                                    ],
+                                    "prodigy/k": self.optimizer.param_groups[0]["k"],
+                                }
+                            )
+                        elif self.config.is_schedulefree:
                             # hackjob method of retrieving LR from accelerated optims
                             self.lr = StateTracker.get_last_lr()
                         else:
@@ -2801,12 +2850,14 @@ class Trainer:
                         logger.error(
                             f"Failed to get the last learning rate from the scheduler. Error: {e}"
                         )
-                    wandb_logs = {
-                        "train_loss": self.train_loss,
-                        "optimization_loss": loss,
-                        "learning_rate": self.lr,
-                        "epoch": epoch,
-                    }
+                    wandb_logs.update(
+                        {
+                            "train_loss": self.train_loss,
+                            "optimization_loss": loss,
+                            "learning_rate": self.lr,
+                            "epoch": epoch,
+                        }
+                    )
                     if parent_loss is not None:
                         wandb_logs["regularisation_loss"] = parent_loss
                     if self.config.model_family == "flux" and self.guidance_values_list:
@@ -2817,7 +2868,7 @@ class Trainer:
                     if self.grad_norm is not None:
                         if self.config.grad_clip_method == "norm":
                             wandb_logs["grad_norm"] = self.grad_norm
-                        elif self.config.grad_clip_method == "value":
+                        else:
                             wandb_logs["grad_absmax"] = self.grad_norm
                     if self.validation is not None and hasattr(
                         self.validation, "evaluation_result"
@@ -3030,7 +3081,7 @@ class Trainer:
 
                 if (
                     self.state["global_step"] >= self.config.max_train_steps
-                    or epoch > self.config.num_train_epochs
+                    or (epoch > self.config.num_train_epochs and not self.config.ignore_final_epochs)
                 ):
                     logger.info(
                         f"Training has completed."
@@ -3039,7 +3090,7 @@ class Trainer:
                     break
             if (
                 self.state["global_step"] >= self.config.max_train_steps
-                or epoch > self.config.num_train_epochs
+                or (epoch > self.config.num_train_epochs and not self.config.ignore_final_epochs)
             ):
                 logger.info(
                     f"Exiting training loop. Beginning model unwind at epoch {epoch}, step {self.state['global_step']}"
@@ -3218,7 +3269,7 @@ class Trainer:
                         tokenizer_3=self.tokenizer_3,
                         vae=self.vae
                         or (
-                            AutoencoderKL.from_pretrained(
+                            self.vae_cls.from_pretrained(
                                 self.config.vae_path,
                                 subfolder=(
                                     "vae"
@@ -3290,7 +3341,7 @@ class Trainer:
                         tokenizer=self.tokenizer_1,
                         vae=self.vae
                         or (
-                            AutoencoderKL.from_pretrained(
+                            self.vae_cls.from_pretrained(
                                 self.config.vae_path,
                                 subfolder=(
                                     "vae"
@@ -3324,7 +3375,7 @@ class Trainer:
                         tokenizer=self.tokenizer_1,
                         vae=self.vae
                         or (
-                            AutoencoderKL.from_pretrained(
+                            self.vae_cls.from_pretrained(
                                 self.config.vae_path,
                                 subfolder=(
                                     "vae"
@@ -3393,7 +3444,7 @@ class Trainer:
                         tokenizer=self.tokenizer_1,
                         tokenizer_2=self.tokenizer_2,
                         vae=StateTracker.get_vae()
-                        or AutoencoderKL.from_pretrained(
+                        or self.vae_cls.from_pretrained(
                             self.config.vae_path,
                             subfolder=(
                                 "vae"
