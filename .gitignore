@@ -1,6 +1,5 @@
 *.code-workspace
 # Python and virtual environment files
-output/
 temp/
 env.sh
 *.pem
@@ -49,6 +48,8 @@ multidatabackend_sd2x.json
 
 wandb/
 cache/
+datasets/
+output/
 vae_cache/
 vendor/
 inference/
