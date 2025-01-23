@@ -6,7 +6,13 @@ root = path.dirname(__file__)
 
 subfolders = [
     'anime-girls',
-    'anime-girls-r18'
+    'anime-girls-r18',
+    'anime-girls-r18_0',
+    'anime-girls-r18_1',
+    'anime-girls-r18_2',
+    'anime-girls-r18_3',
+    'anime-girls-r18_4',
+    'anime-girls-r18_5',
 ]
 
 image_exts = [
