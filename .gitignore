@@ -48,7 +48,6 @@ multidatabackend_sd2x.json
 
 wandb/
 cache/
-datasets/
 output/
 vae_cache/
 vendor/
