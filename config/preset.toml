@@ -1,0 +1,12 @@
+enable_conv = true
+
+target_module = [
+  "SD3Transformer2DModel", 
+]
+
+
+[module_algo_map]
+  [module_algo_map.SD3Transformer2DModel]
+    algo = "lokr"
+    dim = 10000000000000
+    factor = 64

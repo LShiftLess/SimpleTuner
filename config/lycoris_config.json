@@ -1,0 +1,6 @@
+{
+    "algo": "full",
+    "multiplier": 1.0,
+    "linear_dim": 10000,
+    "linear_alpha": 1.0
+}
