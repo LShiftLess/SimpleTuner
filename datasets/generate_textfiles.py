@@ -4,30 +4,24 @@ from os import path
 
 root = path.dirname(__file__)
 
-subfolders = [
+target_dirs = [
     'anime-girls',
     'anime-girls-r18',
-    'anime-girls-r18_0',
-    'anime-girls-r18_1',
-    'anime-girls-r18_2',
-    'anime-girls-r18_3',
-    'anime-girls-r18_4',
-    'anime-girls-r18_5',
 ]
 
 image_exts = [
     '.png', '.jpg', '.jpeg'
 ]
 
-subfolders = [path.join(root, subfolder) for subfolder in subfolders]
+target_dirs = [path.join(root, dir) for dir in target_dirs]
 
-for subfolder in subfolders:
-    for file in os.listdir(subfolder):
+for target_dir in target_dirs:
+    for file in os.listdir(target_dir):
         ext_splitted_file = path.splitext(file)
         file_name = ext_splitted_file[0]
         file_ext = ext_splitted_file[1]
         if file_ext in image_exts:
-            text_file = path.join(subfolder, f'{file_name}.txt')
+            text_file = path.join(target_dir, f'{file_name}.txt')
     
             with open(text_file, 'w') as f:
                 id = '_' + file_name.split('_')[-1]
@@ -35,4 +29,4 @@ for subfolder in subfolders:
                 f.write(content)
         
         elif file_ext in ['.pt', '.json']:
-            os.remove(path.join(subfolder, file))
+            os.remove(path.join(target_dir, file))
