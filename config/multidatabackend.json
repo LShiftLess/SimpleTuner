@@ -2,7 +2,7 @@
     {
         "id": "anime-girls-r18",
         "type": "local",
-        "instance_data_dir": "datasets/anime-girls-r18-resized",
+        "instance_data_dir": "cache/datasets/anime-girls-r18",
         "crop": false,
         "minimum_image_size": 512,
         "maximum_image_size": 1024,
@@ -12,7 +12,7 @@
         "prepend_instance_prompt": false,
         "instance_prompt": "cat girls",
         "only_instance_prompt": false,
-        "cache_dir_vae": "cache/vae/anime-girls-r18-resized",
+        "cache_dir_vae": "cache/vae/anime-girls-r18",
         "vae_cache_clear_each_epoch": true,
         "probability": 1.0,
         "repeats": 10,
