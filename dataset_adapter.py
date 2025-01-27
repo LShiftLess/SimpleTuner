@@ -8,9 +8,8 @@ from tqdm import tqdm
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-root = path.dirname(__file__)
-cache_dir = path.join(path.split(root)[0], 'cache')
-cache_root = path.join(cache_dir, 'datasets')
+root = path.join(path.dirname(__file__), 'datasets')
+cache_root = path.join(path.split(root)[0], 'cache', 'datasets')
 
 target_dirs = [
     "anime-girls",
@@ -26,7 +25,6 @@ img_transformer = transforms.Compose([
     transforms.Resize((1024, 1024))
 ])
 
-os.makedirs(cache_dir, exist_ok=True)
 os.makedirs(cache_root, exist_ok=True)
 
 
@@ -49,6 +47,7 @@ for target_dir in tqdm(target_dirs, desc=task_name, colour='#ff0000'):
 # RESIZE 
 task_name = 'RESIZING'
 for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
+    dataset_name = path.split(target_dir)[1]
 
     for file in tqdm(os.listdir(cache_dir), desc=f'{task_name} (id={dataset_name})'):
 
@@ -64,6 +63,7 @@ for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
 # GENERATE TEXTFILES
 task_name = 'GENERATING TEXTFILES'
 for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
+    dataset_name = path.split(target_dir)[1]
 
     for file in tqdm(os.listdir(cache_dir), desc=f'{task_name} (id={dataset_name})'):
         ext_splitted_file = path.splitext(file)
