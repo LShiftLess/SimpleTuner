@@ -74,7 +74,7 @@ for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
     
             with open(text_file, 'w') as f:
                 id = '_' + file_name.split('_')[-1]
-                content = file_name.removesuffix(id)
+                content = file_name.removesuffix(id) + '.'
                 f.write(content)
         
         elif file_ext in ['.pt', '.json']:
