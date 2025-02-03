@@ -1,8 +1,13 @@
 import os
 from os import path
 import shutil
+
+import numpy as np
 from PIL import Image
+import torch
+import torchvision
 from torchvision.transforms import transforms
+import torchvision.transforms.functional as F
 from PIL import ImageFile
 from tqdm import tqdm
 
@@ -12,8 +17,8 @@ root = path.join(path.dirname(__file__), 'datasets')
 cache_root = path.join(path.split(root)[0], 'cache', 'datasets')
 
 target_dirs = [
-    "anime-girls",
-    "anime-girls-r18",
+    "anime-girls-h",
+    "anime-girls-r",
 ]
 
 image_exts = [".png", ".jpg", ".jpeg"]
@@ -21,8 +26,24 @@ image_exts = [".png", ".jpg", ".jpeg"]
 target_dirs = [path.join(root, dir) for dir in target_dirs]
 cache_dirs = []
 
+class SquarePad:
+    def __init__(self, fill: int | float = 0):
+        self.fill = fill
+
+    def __call__(self, image: torch.Tensor):
+        s = image.size()
+        max_wh = np.max([s[-1], s[-2]])
+        hp = int((max_wh - s[-1]) / 2)
+        vp = int((max_wh - s[-2]) / 2)
+        padding = (hp, vp, hp, vp)
+        return F.pad(image, padding, 0, 'constant')
+
+     
 img_transformer = transforms.Compose([
-    transforms.Resize((1024, 1024))
+    transforms.PILToTensor(),
+    SquarePad(),
+    transforms.Resize(size=1024),
+    transforms.ToPILImage(),
 ])
 
 os.makedirs(cache_root, exist_ok=True)
@@ -30,7 +51,7 @@ os.makedirs(cache_root, exist_ok=True)
 
 # MOVE TO CACHE
 task_name = 'MOVING TO CACHE'
-for target_dir in tqdm(target_dirs, desc=task_name, colour='#ff0000'):
+for target_dir in tqdm(target_dirs, desc=task_name, colour='#dd0000'):
 
     dataset_name = path.split(target_dir)[1]
     dest_dir = path.join(cache_root, dataset_name)
@@ -46,8 +67,8 @@ for target_dir in tqdm(target_dirs, desc=task_name, colour='#ff0000'):
 
 # RESIZE 
 task_name = 'RESIZING'
-for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
-    dataset_name = path.split(target_dir)[1]
+for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#dd0000'):
+    dataset_name = path.split(cache_dir)[1]
 
     for file in tqdm(os.listdir(cache_dir), desc=f'{task_name} (id={dataset_name})'):
 
@@ -62,8 +83,8 @@ for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
 
 # GENERATE TEXTFILES
 task_name = 'GENERATING TEXTFILES'
-for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#ff0000'):
-    dataset_name = path.split(target_dir)[1]
+for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#dd0000'):
+    dataset_name = path.split(cache_dir)[1]
 
     for file in tqdm(os.listdir(cache_dir), desc=f'{task_name} (id={dataset_name})'):
         ext_splitted_file = path.splitext(file)

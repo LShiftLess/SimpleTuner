@@ -89,6 +89,11 @@ if [ -z "${DISABLE_UPDATES}" ]; then
         rocm-smi 2> /dev/null && poetry install -C install/rocm
     fi
 fi
+
+# Run dataset_adapter script
+# python3 dataset_adapter.py
+python dataset_adapter.py
+
 # Run the training script.
 if [[ -z "${ACCELERATE_CONFIG_PATH}" ]]; then
     ACCELERATE_CONFIG_PATH="${HOME}/.cache/huggingface/accelerate/default_config.yaml"
@@ -98,8 +103,7 @@ if [ -f "${ACCELERATE_CONFIG_PATH}" ]; then
     accelerate launch --config_file="${ACCELERATE_CONFIG_PATH}" train.py
 else
     echo "Accelerate config file not found: ${ACCELERATE_CONFIG_PATH}. Using values from config.env."
-#    accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="${MIXED_PRECISION}" --num_processes="${TRAINING_NUM_PROCESSES}" --num_machines="${TRAINING_NUM_MACHINES}" --dynamo_backend="${TRAINING_DYNAMO_BACKEND}" train.py
-     accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="bf16" --num_processes="${TRAINING_NUM_PROCESSES}" --num_machines="${TRAINING_NUM_MACHINES}" --dynamo_backend="${TRAINING_DYNAMO_BACKEND}" train.py PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    accelerate launch ${ACCELERATE_EXTRA_ARGS} --mixed_precision="${MIXED_PRECISION}" --num_processes="${TRAINING_NUM_PROCESSES}" --num_machines="${TRAINING_NUM_MACHINES}" --dynamo_backend="${TRAINING_DYNAMO_BACKEND}" train.py
 fi
 
 exit 0
