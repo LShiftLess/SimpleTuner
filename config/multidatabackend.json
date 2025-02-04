@@ -2,7 +2,7 @@
     {
         "id": "anime-girls-r18",
         "type": "local",
-        "instance_data_dir": "cache/datasets/anime-girls-r18",
+        "instance_data_dir": "cache/datasets/anime-girls-r",
         "crop": false,
         "minimum_image_size": 512,
         "maximum_image_size": 1024,

@@ -3,6 +3,13 @@
 # Pull config from config.env
 [ -f "config/config.env" ] && source config/config.env
 
+# Check arguments
+for arg in "$@"; do
+  if [[ "$arg" == "-ds" ]]; then
+    DS_ADAPTER=true
+  fi
+done
+
 # If the user has not provided VENV_PATH, we will assume $(pwd)/.venv
 if [ -z "${VENV_PATH}" ]; then
     # what if we have VIRTUAL_ENV? use that instead
@@ -91,8 +98,10 @@ if [ -z "${DISABLE_UPDATES}" ]; then
 fi
 
 # Run dataset_adapter script
-# python3 dataset_adapter.py
-python dataset_adapter.py
+if [ "${DS_ADAPTER}" ]; then
+    # python3 dataset_adapter.py
+    python dataset_adapter.py
+fi
 
 # Run the training script.
 if [[ -z "${ACCELERATE_CONFIG_PATH}" ]]; then

@@ -3,7 +3,7 @@
   "data_backend_config": "config/multidatabackend.json",
   "aspect_bucket_rounding": 2,
   "seed": 42,
-  "pretrained_model_name_or_path": "lshiftless/aquability-ft-lora",
+  "pretrained_model_name_or_path": "lshiftless/aquability-ft",
   "model_family": "sd3",
   "output_dir": "output/models",
   "push_to_hub": true,

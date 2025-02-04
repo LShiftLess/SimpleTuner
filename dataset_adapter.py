@@ -12,6 +12,7 @@ from PIL import ImageFile
 from tqdm import tqdm
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.mps.is_available() else 'cpu'
 
 root = path.join(path.dirname(__file__), 'datasets')
 cache_root = path.join(path.split(root)[0], 'cache', 'datasets')
@@ -27,7 +28,7 @@ target_dirs = [path.join(root, dir) for dir in target_dirs]
 cache_dirs = []
 
 class SquarePad:
-    def __init__(self, fill: int | float = 0):
+    def __init__(self, fill: int | float = 0x00000000):
         self.fill = fill
 
     def __call__(self, image: torch.Tensor):
@@ -41,12 +42,15 @@ class SquarePad:
      
 img_transformer = transforms.Compose([
     transforms.PILToTensor(),
+    lambda tensor: tensor.to(device),
     SquarePad(),
-    transforms.Resize(size=1024),
+    transforms.Resize((1024, 1024)),
     transforms.ToPILImage(),
 ])
 
-os.makedirs(cache_root, exist_ok=True)
+# Rebuild cache root of datasets
+shutil.rmtree(cache_root)
+os.makedirs(cache_root)
 
 
 # MOVE TO CACHE
@@ -57,7 +61,7 @@ for target_dir in tqdm(target_dirs, desc=task_name, colour='#dd0000'):
     dest_dir = path.join(cache_root, dataset_name)
     cache_dirs.append(dest_dir)
 
-    os.makedirs(dest_dir, exist_ok=True)
+    os.makedirs(dest_dir)
 
     for file in tqdm(os.listdir(target_dir), desc=f'{task_name} (id={dataset_name})'):
         dest_file = path.join(dest_dir, file)
