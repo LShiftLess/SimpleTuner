@@ -46,6 +46,7 @@ work
 
 wandb/
 cache/
+dataset/
 output/
 vae_cache/
 vendor/
