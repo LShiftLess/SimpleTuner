@@ -2,5 +2,20 @@
     "algo": "lokr",
     "multiplier": 1.0,
     "linear_dim": 10000,
-    "linear_alpha": 1.0
+    "linear_alpha": 1,
+    "factor": 16,
+    "apply_preset": {
+        "target_module": [
+            "CrossAttention",
+            "FeedForward"
+        ],
+        "module_algo_map": {
+            "CrossAttention": {
+                "factor": 16
+            },
+            "FeedForward": {
+                "factor": 8
+            }
+        }
+    }
 }
