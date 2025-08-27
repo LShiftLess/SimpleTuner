@@ -18,7 +18,6 @@ root = path.join(path.dirname(__file__), 'datasets')
 cache_root = path.join(path.split(root)[0], 'cache', 'datasets')
 
 target_dirs = [
-    "anime-girls-h",
     "anime-girls-r",
 ]
 
@@ -49,12 +48,12 @@ img_transformer = transforms.Compose([
 ])
 
 # Rebuild cache root of datasets
-shutil.rmtree(cache_root)
+shutil.rmtree(cache_root, ignore_errors=True)
 os.makedirs(cache_root)
 
 
 # MOVE TO CACHE
-task_name = 'MOVING TO CACHE'
+task_name = 'cache'
 for target_dir in tqdm(target_dirs, desc=task_name, colour='#dd0000'):
 
     dataset_name = path.split(target_dir)[1]
@@ -70,7 +69,7 @@ for target_dir in tqdm(target_dirs, desc=task_name, colour='#dd0000'):
 
 
 # RESIZE 
-task_name = 'RESIZING'
+task_name = 'resize'
 for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#dd0000'):
     dataset_name = path.split(cache_dir)[1]
 
@@ -86,7 +85,7 @@ for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#dd0000'):
 
 
 # GENERATE TEXTFILES
-task_name = 'GENERATING TEXTFILES'
+task_name = 'text files'
 for cache_dir in tqdm(cache_dirs, desc=task_name, colour='#dd0000'):
     dataset_name = path.split(cache_dir)[1]
 

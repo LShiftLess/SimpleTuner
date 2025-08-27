@@ -13,7 +13,7 @@
   "tracker_project_name": "aquability-ft-lora-training",
   "tracker_run_name": "aquability-ft-lora",
   "max_train_steps": 0,
-  "num_train_epochs": 5,
+  "num_train_epochs": 10,
   "checkpointing_steps": 500,
   "checkpoints_total_limit": 5,
   "train_batch_size": 1,
